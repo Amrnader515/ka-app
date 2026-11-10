@@ -52,8 +52,13 @@ jobs:
           sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
           sed -i 's#android:label="ka_app"#android:label="Key Account"#' $M
           flutter pub get
-          flutter build apk --release
-          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/KA.apk"
+          flutter build apk --release --build-number=${{ github.run_number }} --build-name=1.0.${{ github.run_number }}
+          # توقيع ثابت بنفس المفتاح كل مرة — عشان أي نسخة جديدة تتسطّب فوق القديمة
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" sign --ks "$GITHUB_WORKSPACE/apk/debug.keystore" --ks-pass pass:android \
+            --ks-key-alias androiddebugkey --key-pass pass:android \
+            --out "$GITHUB_WORKSPACE/KA.apk" build/app/outputs/flutter-apk/app-release.apk
+          "$BT/apksigner" verify --print-certs "$GITHUB_WORKSPACE/KA.apk"
 
       - name: Publish release
         env:
