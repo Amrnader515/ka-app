@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Key Account</title>
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Key Account">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-32.png">
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box}
+  #app{border:0;width:100%;height:100%;display:block;background:#fff}
+  #splash{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#C9964A;font:700 16px Tahoma,Arial,sans-serif;transition:opacity .4s}
+  #splash img{width:110px;height:110px;border-radius:26px}
+  #splash.off{opacity:0;pointer-events:none}
+</style>
+</head>
+<body>
+<iframe id="app" title="Key Account Application Report"
+  src="https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec"
+  allow="clipboard-write; fullscreen"></iframe>
+<div id="splash"><img src="icon-512.png" alt=""><div>Key Account Application Report</div></div>
+<script>
+  var f=document.getElementById('app'),s=document.getElementById('splash');
+  f.addEventListener('load',function(){ setTimeout(function(){ s.classList.add('off'); },300); });
+  setTimeout(function(){ s.classList.add('off'); },8000);
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+</script>
+</body>
+</html>
