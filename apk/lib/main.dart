@@ -39,6 +39,8 @@ class _HomeState extends State<Home> {
 
   bool _inside(Uri u) {
     final h = u.host;
+    /* صفحات تسجيل دخول جوجل متفتحش جوه التطبيق — جوجل بيرفضها */
+    if (h == 'accounts.google.com' || h.endsWith('.accounts.google.com')) return false;
     return u.scheme == 'about' ||
         u.scheme == 'blob' ||
         u.scheme == 'data' ||
