@@ -1,0 +1,64 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths: ['apk/**', '.github/workflows/apk.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Fixed signing key (every build installs over the previous one)
+        run: |
+          mkdir -p ~/.android
+          cp apk/debug.keystore ~/.android/debug.keystore
+
+      - name: Build
+        shell: bash
+        run: |
+          set -eo pipefail
+          flutter create --org com.amrnader --project-name ka_app --platforms android /tmp/app
+          rm -rf /tmp/app/lib /tmp/app/test
+          cp -r apk/lib /tmp/app/lib
+          cp apk/pubspec.yaml /tmp/app/pubspec.yaml
+          mkdir -p /tmp/app/assets && cp apk/icon.png /tmp/app/assets/icon.png
+          printf '  assets:\n    - assets/icon.png\n' >> /tmp/app/pubspec.yaml
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp apk/icons/$d.png /tmp/app/android/app/src/main/res/mipmap-$d/ic_launcher.png
+          done
+          cd /tmp/app
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
+          sed -i 's#android:label="ka_app"#android:label="Key Account"#' $M
+          flutter pub get
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk "$GITHUB_WORKSPACE/KA.apk"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "apk-${{ github.run_number }}" KA.apk \
+            --title "Key Account — Android ${{ github.run_number }}" \
+            --notes "نزّل KA.apk وثبّته." --latest

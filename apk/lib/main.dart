@@ -1,0 +1,140 @@
+/* Key Account — تطبيق أندرويد: بيفتح الاسكريبت جوه WebView ملء الشاشة */
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+
+const kUrl =
+    'https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.black,
+    statusBarIconBrightness: Brightness.light,
+  ));
+  runApp(const KaApp());
+}
+
+class KaApp extends StatelessWidget {
+  const KaApp({super.key});
+  @override
+  Widget build(BuildContext context) => const MaterialApp(
+        title: 'Key Account',
+        debugShowCheckedModeBanner: false,
+        home: Home(),
+      );
+}
+
+class Home extends StatefulWidget {
+  const Home({super.key});
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
+  late final WebViewController _c;
+  bool _loading = true;
+  bool _error = false;
+
+  bool _inside(Uri u) {
+    final h = u.host;
+    return u.scheme == 'about' ||
+        u.scheme == 'blob' ||
+        u.scheme == 'data' ||
+        h.endsWith('google.com') ||
+        h.endsWith('googleusercontent.com') ||
+        h.endsWith('gstatic.com') ||
+        h.endsWith('googleapis.com');
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _c = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.black)
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageFinished: (_) {
+          if (mounted) setState(() => _loading = false);
+        },
+        onWebResourceError: (e) {
+          if (e.isForMainFrame == true && mounted) {
+            setState(() {
+              _error = true;
+              _loading = false;
+            });
+          }
+        },
+        onNavigationRequest: (r) {
+          final u = Uri.tryParse(r.url);
+          if (u == null || _inside(u)) return NavigationDecision.navigate;
+          launchUrl(u, mode: LaunchMode.externalApplication);
+          return NavigationDecision.prevent;
+        },
+      ))
+      ..loadRequest(Uri.parse(kUrl));
+  }
+
+  void _reload() {
+    setState(() {
+      _error = false;
+      _loading = true;
+    });
+    _c.loadRequest(Uri.parse(kUrl));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (await _c.canGoBack()) {
+          _c.goBack();
+        } else {
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Stack(children: [
+            WebViewWidget(controller: _c),
+            if (_loading)
+              Container(
+                color: Colors.black,
+                alignment: Alignment.center,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: Image.asset('assets/icon.png', width: 110, height: 110),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text('Key Account Application Report',
+                      style: TextStyle(color: Color(0xFFC9964A), fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 18),
+                  const SizedBox(
+                      width: 26, height: 26,
+                      child: CircularProgressIndicator(strokeWidth: 3, color: Color(0xFFC9964A))),
+                ]),
+              ),
+            if (_error)
+              Container(
+                color: Colors.black,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.all(24),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Text('تأكد من الإنترنت وجرب تاني',
+                      textDirection: TextDirection.rtl,
+                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                  const SizedBox(height: 16),
+                  ElevatedButton(onPressed: _reload, child: const Text('إعادة المحاولة')),
+                ]),
+              ),
+          ]),
+        ),
+      ),
+    );
+  }
+}

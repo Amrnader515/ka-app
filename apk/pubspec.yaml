@@ -1,0 +1,13 @@
+name: ka_app
+description: Key Account Application Report
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.10.0
+  url_launcher: ^6.3.0
+flutter:
+  uses-material-design: true
