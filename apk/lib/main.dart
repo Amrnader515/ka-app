@@ -1,6 +1,8 @@
 /* Key Account — تطبيق أندرويد: بيفتح الاسكريبت جوه WebView ملء الشاشة */
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -36,6 +38,25 @@ class _HomeState extends State<Home> {
   late final WebViewController _c;
   bool _loading = true;
   bool _error = false;
+  String? _remember;   /* «تذكّرني» محفوظ جوه التطبيق */
+
+  Uri _startUri() => Uri.parse(_remember == null || _remember!.isEmpty
+      ? kUrl
+      : '$kUrl#kar=${Uri.encodeComponent(_remember!)}');
+
+  Future<void> _onStore(String msg) async {
+    try {
+      final m = jsonDecode(msg) as Map<String, dynamic>;
+      final sp = await SharedPreferences.getInstance();
+      if (m['t'] == 'save' && m['v'] is String) {
+        _remember = m['v'] as String;
+        await sp.setString('kar', _remember!);
+      } else if (m['t'] == 'clear') {
+        _remember = null;
+        await sp.remove('kar');
+      }
+    } catch (_) {}
+  }
 
   bool _inside(Uri u) {
     final h = u.host;
@@ -55,6 +76,7 @@ class _HomeState extends State<Home> {
     super.initState();
     _c = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel('KAStore', onMessageReceived: (m) => _onStore(m.message))
       ..setBackgroundColor(Colors.black)
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {
@@ -75,7 +97,11 @@ class _HomeState extends State<Home> {
           return NavigationDecision.prevent;
         },
       ))
-      ..loadRequest(Uri.parse(kUrl));
+      ;
+    SharedPreferences.getInstance().then((sp) {
+      _remember = sp.getString('kar');
+      _c.loadRequest(_startUri());
+    });
   }
 
   void _reload() {
@@ -83,7 +109,7 @@ class _HomeState extends State<Home> {
       _error = false;
       _loading = true;
     });
-    _c.loadRequest(Uri.parse(kUrl));
+    _c.loadRequest(_startUri());
   }
 
   @override
