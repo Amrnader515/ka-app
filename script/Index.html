@@ -262,7 +262,7 @@ td.below{background:#fde2e2 !important}
       </label>
     </div>
     <button class="btn-full" id="btnCode">دخول</button>
-    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 4.8</div>
+    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 4.9</div>
   </div>
 
   <div class="step" id="step-branches">
@@ -485,8 +485,7 @@ function saveRemember(code, pass){
     else if(IS_APP && window.KAStore) msg = '✅ تذكّرني اتحفظ (تطبيق الأندرويد)';
     else msg = '⚠️ تذكّرني متحفظش — المتصفح مانع الحفظ';
     REM_DIAG.saved = msg;
-    toast(msg, msg.indexOf('⚠️') === 0);
-    showRemDiag();
+    if(msg.indexOf('✅') === 0) toast('✅ تذكّرني اتحفظ');
   }, 1500);
 }
 var REM_ACK = false;
@@ -494,7 +493,7 @@ var REM_ACK = false;
 var REM_DIAG = { top: '', hash: '', ls: '', saved: '' };
 try { REM_DIAG.top = (window.top === window) ? 'مباشر' : 'جوه صفحة'; } catch(e){ REM_DIAG.top = 'جوه صفحة'; }
 try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); REM_DIAG.ls = 'شغالة'; } catch(e){ REM_DIAG.ls = 'ممنوعة'; }
-function showRemDiag(){
+function showRemDiag(){ return; /* التشخيص اتقفل */
   var t = 'تذكّرني: ' + (REM_DIAG.saved || '—') + ' · ذاكرة: ' + REM_DIAG.ls + ' · فتح: ' + REM_DIAG.top + ' · محفوظ قبل كده: ' + (REM_DIAG.hash || '—');
   var a = document.getElementById('verTag'); if(a) a.textContent = 'إصدار 4.8 · ' + t;
   var b = document.getElementById('remDiag');
