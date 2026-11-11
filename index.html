@@ -22,12 +22,22 @@
 </style>
 </head>
 <body>
-<iframe id="app" title="Key Account Application Report"
-  src="https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec"
-  allow="clipboard-write; fullscreen"></iframe>
+<iframe id="app" title="Key Account Application Report" allow="clipboard-write; fullscreen"></iframe>
 <div id="splash"><img src="icon-512.png" alt=""><div>Key Account Application Report</div></div>
 <script>
+  var EXEC='https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec';
   var f=document.getElementById('app'),s=document.getElementById('splash');
+  /* «تذكّرني» محفوظ هنا في الصفحة دي (مش جوه إطار جوجل اللي المتصفح بيمنع ذاكرته) */
+  var kar=null; try{ kar=localStorage.getItem('ka_kar'); }catch(e){}
+  f.src = EXEC + '?app=1' + (kar ? '#kar=' + encodeURIComponent(kar) : '');
+  window.addEventListener('message', function(ev){
+    if(!/\.googleusercontent\.com$/.test(new URL(ev.origin).hostname)) return;
+    var d=ev.data||{};
+    try{
+      if(d.ka==='save' && typeof d.v==='string' && d.v) localStorage.setItem('ka_kar', d.v);
+      else if(d.ka==='clear') localStorage.removeItem('ka_kar');
+    }catch(e){}
+  });
   f.addEventListener('load',function(){ setTimeout(function(){ s.classList.add('off'); },300); });
   setTimeout(function(){ s.classList.add('off'); },8000);
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }

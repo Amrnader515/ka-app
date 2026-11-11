@@ -465,11 +465,14 @@ function saveRemember(code, pass){
     localStorage.setItem(REMEMBER_KEY, JSON.stringify(data));
   } catch(e){}
   /* 📱 تطبيق الأندرويد: بيحفظ «تذكّرني» جوه التطبيق نفسه (عن طريق # في عنوان الصفحة) */
+  var v = '';
   try {
-    var v = btoa(JSON.stringify({ code: code, p: btoa(unescape(encodeURIComponent(pass))) }));
+    v = btoa(JSON.stringify({ code: code, p: btoa(unescape(encodeURIComponent(pass))) }));
     if(window.KAStore) KAStore.postMessage(JSON.stringify({ t:'save', v: v }));
     if(IS_APP) google.script.history.replace(null, { app: '1' }, 'kar=' + encodeURIComponent(v));
   } catch(e){}
+  /* 🌐 صفحة التطبيق على github.io بتحفظه عندها (ذاكرتها مش ممنوعة) */
+  try { window.top.postMessage({ ka: 'save', v: v }, KA_HOME); } catch(e){}
 }
 function loadRemember(){
   try {
@@ -484,7 +487,9 @@ function clearRemember(){
   try { localStorage.removeItem(REMEMBER_KEY); } catch(e){}
   try { if(window.KAStore) KAStore.postMessage(JSON.stringify({ t:'clear' })); } catch(e){}
   try { if(IS_APP) google.script.history.replace(null, { app: '1' }, 'kar=0'); } catch(e){}
+  try { window.top.postMessage({ ka: 'clear' }, KA_HOME); } catch(e){}
 }
+var KA_HOME = 'https://amrnader515.github.io';
 var IS_APP = false;   /* بيتفتح من تطبيق الأندرويد (?app=1) */
 /* 📱 تطبيق الأندرويد بيبعت «تذكّرني» في #kar=… (الـ # مش بيوصل للسيرفر) */
 function loadRememberFromApp(cb){
