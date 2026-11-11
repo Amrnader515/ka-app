@@ -262,7 +262,7 @@ td.below{background:#fde2e2 !important}
       </label>
     </div>
     <button class="btn-full" id="btnCode">دخول</button>
-    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 4.7</div>
+    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 4.8</div>
   </div>
 
   <div class="step" id="step-branches">
@@ -479,12 +479,28 @@ function saveRemember(code, pass){
   var localOk = false;
   try { localOk = !!localStorage.getItem(REMEMBER_KEY); } catch(e){}
   setTimeout(function(){
-    if(REM_ACK || localOk) toast('✅ تذكّرني اتحفظ على الجهاز');
-    else if(IS_APP && window.KAStore) toast('✅ تذكّرني اتحفظ في التطبيق');
-    else toast('⚠️ المتصفح ده مانع الحفظ — استخدم لينك التطبيق أو تطبيق الأندرويد', true);
+    var msg;
+    if(REM_ACK) msg = '✅ تذكّرني اتحفظ (صفحة التطبيق)';
+    else if(localOk) msg = '✅ تذكّرني اتحفظ (المتصفح)';
+    else if(IS_APP && window.KAStore) msg = '✅ تذكّرني اتحفظ (تطبيق الأندرويد)';
+    else msg = '⚠️ تذكّرني متحفظش — المتصفح مانع الحفظ';
+    REM_DIAG.saved = msg;
+    toast(msg, msg.indexOf('⚠️') === 0);
+    showRemDiag();
   }, 1500);
 }
 var REM_ACK = false;
+/* 🔎 تشخيص «تذكّرني» — بيظهر سطر صغير في الشاشة الرئيسية وتحت زرار الدخول */
+var REM_DIAG = { top: '', hash: '', ls: '', saved: '' };
+try { REM_DIAG.top = (window.top === window) ? 'مباشر' : 'جوه صفحة'; } catch(e){ REM_DIAG.top = 'جوه صفحة'; }
+try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); REM_DIAG.ls = 'شغالة'; } catch(e){ REM_DIAG.ls = 'ممنوعة'; }
+function showRemDiag(){
+  var t = 'تذكّرني: ' + (REM_DIAG.saved || '—') + ' · ذاكرة: ' + REM_DIAG.ls + ' · فتح: ' + REM_DIAG.top + ' · محفوظ قبل كده: ' + (REM_DIAG.hash || '—');
+  var a = document.getElementById('verTag'); if(a) a.textContent = 'إصدار 4.8 · ' + t;
+  var b = document.getElementById('remDiag');
+  if(!b){ b = document.createElement('div'); b.id = 'remDiag'; b.style.cssText = 'font-size:11px;color:#8a93a8;text-align:center;padding:6px 10px'; var app = document.getElementById('app'); if(app) app.appendChild(b); }
+  b.textContent = t;
+}
 window.addEventListener('message', function(ev){
   if(ev.origin === KA_HOME && ev.data && ev.data.ka === 'ack') REM_ACK = true;
 });
@@ -512,6 +528,7 @@ function loadRememberFromApp(cb){
       try {
         IS_APP = !!(loc.parameter && loc.parameter.app === '1');
         var m = String(loc.hash || '').match(/(?:^|&)kar=([^&]+)/);
+        REM_DIAG.hash = m && m[1] !== '0' ? 'آه (#)' : 'لأ'; showRemDiag();
         if(!m || m[1] === '0'){ cb(null); return; }
         var raw = m[1]; try { raw = decodeURIComponent(raw); } catch(e){}
         var data = JSON.parse(atob(raw));
