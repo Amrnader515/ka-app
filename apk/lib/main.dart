@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 const kUrl =
     'https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec';
@@ -98,6 +99,14 @@ class _HomeState extends State<Home> {
         },
       ))
       ;
+    /* الاسكريبت شغال جوه إطار من دومين جوجل التاني (googleusercontent) —
+       من غير السماح ده الأندرويد بيمسح ذاكرته، فـ«تذكّرني» مش بيتحفظ */
+    final cm = WebViewCookieManager();
+    if (cm.platform is AndroidWebViewCookieManager &&
+        _c.platform is AndroidWebViewController) {
+      (cm.platform as AndroidWebViewCookieManager).setAcceptThirdPartyCookies(
+          _c.platform as AndroidWebViewController, true);
+    }
     SharedPreferences.getInstance().then((sp) {
       _remember = sp.getString('kar');
       _c.loadRequest(_startUri());
