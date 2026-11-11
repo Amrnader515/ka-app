@@ -464,8 +464,12 @@ function saveRemember(code, pass){
     var data = { code: code, p: btoa(unescape(encodeURIComponent(pass))) };
     localStorage.setItem(REMEMBER_KEY, JSON.stringify(data));
   } catch(e){}
-  /* 📱 تطبيق الأندرويد: بيحفظ «تذكّرني» جوه التطبيق نفسه */
-  try { if(window.KAStore) KAStore.postMessage(JSON.stringify({ t:'save', v: btoa(JSON.stringify({ code: code, p: btoa(unescape(encodeURIComponent(pass))) })) })); } catch(e){}
+  /* 📱 تطبيق الأندرويد: بيحفظ «تذكّرني» جوه التطبيق نفسه (عن طريق # في عنوان الصفحة) */
+  try {
+    var v = btoa(JSON.stringify({ code: code, p: btoa(unescape(encodeURIComponent(pass))) }));
+    if(window.KAStore) KAStore.postMessage(JSON.stringify({ t:'save', v: v }));
+    if(IS_APP) google.script.history.replace(null, { app: '1' }, 'kar=' + encodeURIComponent(v));
+  } catch(e){}
 }
 function loadRemember(){
   try {
@@ -479,14 +483,17 @@ function loadRemember(){
 function clearRemember(){
   try { localStorage.removeItem(REMEMBER_KEY); } catch(e){}
   try { if(window.KAStore) KAStore.postMessage(JSON.stringify({ t:'clear' })); } catch(e){}
+  try { if(IS_APP) google.script.history.replace(null, { app: '1' }, 'kar=0'); } catch(e){}
 }
+var IS_APP = false;   /* بيتفتح من تطبيق الأندرويد (?app=1) */
 /* 📱 تطبيق الأندرويد بيبعت «تذكّرني» في #kar=… (الـ # مش بيوصل للسيرفر) */
 function loadRememberFromApp(cb){
   try {
     google.script.url.getLocation(function(loc){
       try {
+        IS_APP = !!(loc.parameter && loc.parameter.app === '1');
         var m = String(loc.hash || '').match(/(?:^|&)kar=([^&]+)/);
-        if(!m){ cb(null); return; }
+        if(!m || m[1] === '0'){ cb(null); return; }
         var data = JSON.parse(atob(decodeURIComponent(m[1])));
         if(!data || !data.code || !data.p){ cb(null); return; }
         cb({ code: data.code, pass: decodeURIComponent(escape(atob(data.p))) });
@@ -2294,7 +2301,10 @@ function renderSubsAdmin(it, res){
   });
 }
 
-window.addEventListener('load', function(){ tryAutoLogin(); });
+window.addEventListener('load', function(){
+  try { google.script.url.getLocation(function(loc){ IS_APP = !!(loc.parameter && loc.parameter.app === '1'); }); } catch(e){}
+  tryAutoLogin();
+});
 </script>
 </body>
 </html>

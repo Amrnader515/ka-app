@@ -1,5 +1,6 @@
 /* Key Account — تطبيق أندرويد: بيفتح الاسكريبت جوه WebView ملء الشاشة */
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,9 +42,27 @@ class _HomeState extends State<Home> {
   bool _error = false;
   String? _remember;   /* «تذكّرني» محفوظ جوه التطبيق */
 
+  Timer? _watch;
+
   Uri _startUri() => Uri.parse(_remember == null || _remember!.isEmpty
-      ? kUrl
-      : '$kUrl#kar=${Uri.encodeComponent(_remember!)}');
+      ? '$kUrl?app=1'
+      : '$kUrl?app=1#kar=${Uri.encodeComponent(_remember!)}');
+
+  /* الاسكريبت بيكتب «تذكّرني» في # بتاع العنوان — التطبيق بيقراه ويحفظه */
+  Future<void> _checkUrl(String? url) async {
+    if (url == null) return;
+    final i = url.indexOf('#');
+    if (i < 0) return;
+    final m = RegExp(r'(?:^|&)kar=([^&]+)').firstMatch(url.substring(i + 1));
+    if (m == null) return;
+    final v = Uri.decodeComponent(m.group(1)!);
+    final sp = await SharedPreferences.getInstance();
+    if (v == '0') {
+      if (_remember != null) { _remember = null; await sp.remove('kar'); }
+    } else if (v != _remember) {
+      _remember = v; await sp.setString('kar', v);
+    }
+  }
 
   Future<void> _onStore(String msg) async {
     try {
@@ -80,9 +99,11 @@ class _HomeState extends State<Home> {
       ..addJavaScriptChannel('KAStore', onMessageReceived: (m) => _onStore(m.message))
       ..setBackgroundColor(Colors.black)
       ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (_) {
+        onPageFinished: (u) {
           if (mounted) setState(() => _loading = false);
+          _checkUrl(u);
         },
+        onUrlChange: (c) => _checkUrl(c.url),
         onWebResourceError: (e) {
           if (e.isForMainFrame == true && mounted) {
             setState(() {
@@ -111,6 +132,15 @@ class _HomeState extends State<Home> {
       _remember = sp.getString('kar');
       _c.loadRequest(_startUri());
     });
+    _watch = Timer.periodic(const Duration(seconds: 2), (_) async {
+      try { _checkUrl(await _c.currentUrl()); } catch (_) {}
+    });
+  }
+
+  @override
+  void dispose() {
+    _watch?.cancel();
+    super.dispose();
   }
 
   void _reload() {
