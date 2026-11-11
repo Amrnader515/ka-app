@@ -34,7 +34,10 @@
     if(!/\.googleusercontent\.com$/.test(new URL(ev.origin).hostname)) return;
     var d=ev.data||{};
     try{
-      if(d.ka==='save' && typeof d.v==='string' && d.v) localStorage.setItem('ka_kar', d.v);
+      if(d.ka==='save' && typeof d.v==='string' && d.v){
+        localStorage.setItem('ka_kar', d.v);
+        if(localStorage.getItem('ka_kar')===d.v && ev.source) ev.source.postMessage({ka:'ack'}, ev.origin);
+      }
       else if(d.ka==='clear') localStorage.removeItem('ka_kar');
     }catch(e){}
   });

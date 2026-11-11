@@ -473,7 +473,20 @@ function saveRemember(code, pass){
   } catch(e){}
   /* 🌐 صفحة التطبيق على github.io بتحفظه عندها (ذاكرتها مش ممنوعة) */
   try { window.top.postMessage({ ka: 'save', v: v }, KA_HOME); } catch(e){}
+  /* ✅ تأكيد للمستخدم إن الحفظ نجح فعلاً */
+  REM_ACK = false;
+  var localOk = false;
+  try { localOk = !!localStorage.getItem(REMEMBER_KEY); } catch(e){}
+  setTimeout(function(){
+    if(REM_ACK || localOk) toast('✅ تذكّرني اتحفظ على الجهاز');
+    else if(IS_APP && window.KAStore) toast('✅ تذكّرني اتحفظ في التطبيق');
+    else toast('⚠️ المتصفح ده مانع الحفظ — استخدم لينك التطبيق أو تطبيق الأندرويد', true);
+  }, 1500);
 }
+var REM_ACK = false;
+window.addEventListener('message', function(ev){
+  if(ev.origin === KA_HOME && ev.data && ev.data.ka === 'ack') REM_ACK = true;
+});
 function loadRemember(){
   try {
     var raw = localStorage.getItem(REMEMBER_KEY);
@@ -499,10 +512,11 @@ function loadRememberFromApp(cb){
         IS_APP = !!(loc.parameter && loc.parameter.app === '1');
         var m = String(loc.hash || '').match(/(?:^|&)kar=([^&]+)/);
         if(!m || m[1] === '0'){ cb(null); return; }
-        var data = JSON.parse(atob(decodeURIComponent(m[1])));
+        var raw = m[1]; try { raw = decodeURIComponent(raw); } catch(e){}
+        var data = JSON.parse(atob(raw));
         if(!data || !data.code || !data.p){ cb(null); return; }
         cb({ code: data.code, pass: decodeURIComponent(escape(atob(data.p))) });
-      } catch(e){ cb(null); }
+      } catch(e){ toast('⚠️ تعذّر قراءة تذكّرني', true); cb(null); }
     });
   } catch(e){ cb(null); }
 }
