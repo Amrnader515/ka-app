@@ -129,6 +129,21 @@ table.sticky-cols tr.total td.stik{background:#eef1f5}
 .chtabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
 .chtab{background:#eef1f5;color:#305496;border:1px solid #dfe3e8;border-radius:9px;padding:8px 11px;font-size:13px;font-weight:700}
 .chtab.active{background:#305496;color:#fff;border-color:#305496}
+.tg-search{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #dfe3e8;border-radius:10px;font-size:14px;margin-bottom:10px}
+.tg-comp{border:1px solid #e3e7ee;border-radius:12px;margin-bottom:10px;overflow:hidden;background:#fff}
+.tg-comp summary{cursor:pointer;padding:11px 14px;font-weight:700;color:#305496;background:#f4f7fc;display:flex;justify-content:space-between;gap:8px}
+.tg-comp summary small{color:#7a869a;font-weight:600}
+.tg-x{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tg-t{width:100%;border-collapse:collapse;font-size:13px}
+.tg-t td.n{white-space:normal;word-break:break-word}
+.tg-t th,.tg-t td:first-child,.tg-t td:last-child{white-space:nowrap}
+.tg-t th{background:#305496;color:#fff;padding:7px 6px;font-weight:700}
+.tg-t td{padding:7px 6px;border-bottom:1px solid #eef1f5;text-align:center}
+.tg-t td.n{text-align:right}
+.tg-b{background:#e8f6ee;color:#1e7e46;border-radius:7px;padding:2px 8px;font-weight:700;white-space:nowrap}
+.tg-nb{color:#a0a8b8;font-size:12px}
+.tg-cnt{font-size:12px;color:#7a869a;margin-bottom:8px}
+
 .chart-card,.cap-box{background:#fff;border:1px solid #e6e8ec;border-radius:14px;padding:16px}
 .chart-head{display:flex;align-items:center;gap:11px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px dashed #e0e4ea}
 .chart-head-txt{display:flex;flex-direction:column;gap:3px}
@@ -262,7 +277,7 @@ td.below{background:#fde2e2 !important}
       </label>
     </div>
     <button class="btn-full" id="btnCode">دخول</button>
-    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 4.9</div>
+    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 5.2</div>
   </div>
 
   <div class="step" id="step-branches">
@@ -426,6 +441,7 @@ var ICONS = [
   { id: 'charts',      icon: '📊', label: 'رسومات بيانية' },
   { id: 'offers',      icon: '🔥', label: 'أهم العروض' },
   { id: 'knowledge',   icon: '💡', label: 'Knowledge' },
+  { id: 'targets',     icon: '💊', label: 'أصناف المستهدفات الشهرية' },
   { id: 'area',        icon: '🗺️', label: 'بيع المنطقة' },
   { id: 'hand',        icon: '✋', label: 'بيع إيده 15%' },
   { id: 'near',        icon: '🎯', label: 'أقرب الصيدليات' },
@@ -495,7 +511,7 @@ try { REM_DIAG.top = (window.top === window) ? 'مباشر' : 'جوه صفحة';
 try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); REM_DIAG.ls = 'شغالة'; } catch(e){ REM_DIAG.ls = 'ممنوعة'; }
 function showRemDiag(){ return; /* التشخيص اتقفل */
   var t = 'تذكّرني: ' + (REM_DIAG.saved || '—') + ' · ذاكرة: ' + REM_DIAG.ls + ' · فتح: ' + REM_DIAG.top + ' · محفوظ قبل كده: ' + (REM_DIAG.hash || '—');
-  var a = document.getElementById('verTag'); if(a) a.textContent = 'إصدار 4.8 · ' + t;
+  var a = document.getElementById('verTag'); if(a) a.textContent = 'إصدار 5.2 · ' + t;
   var b = document.getElementById('remDiag');
   if(!b){ b = document.createElement('div'); b.id = 'remDiag'; b.style.cssText = 'font-size:11px;color:#8a93a8;text-align:center;padding:6px 10px'; var app = document.getElementById('app'); if(app) app.appendChild(b); }
   b.textContent = t;
@@ -764,7 +780,25 @@ function isSalesmanLevel(){
   return ar.indexOf('مندوب') > -1;
 }
 
+/* ===== 📱 إشعارات الموبايل =====
+   الغلاف (لينك الويب) أو تطبيق الأندرويد بيبعتوا رقم الجهاز هنا، وإحنا بنسجّله بعد الدخول بس */
+var PUSH = { tok: null, plat: null, done: null };
+function pushTry(){
+  if(!PUSH.tok || !SESSION || !SESSION.token || PUSH.done === PUSH.tok + SESSION.code) return;
+  var key = PUSH.tok + SESSION.code;
+  google.script.run.withSuccessHandler(function(r){ if(r && r.ok){ PUSH.done = key; try{ window.top.postMessage({ka:'pushOk'}, '*'); }catch(e){} } })
+    .registerPush(SESSION.token, PUSH.tok, PUSH.plat || 'web');
+}
+window.addEventListener('message', function(ev){
+  var o = String(ev.origin || '');
+  if(o !== 'https://amrnader515.github.io' && o !== 'https://script.google.com') return;
+  var d = ev.data || {};
+  if(d.ka === 'pushToken' && typeof d.t === 'string' && d.t.length > 20){ PUSH.tok = d.t; PUSH.plat = d.p || 'web'; pushTry(); }
+});
+function pushAsk(){ try{ window.top.postMessage({ka:'logged'}, '*'); }catch(e){} pushTry(); }
+
 function enterApp(){
+  setTimeout(pushAsk, 500);
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
 
@@ -839,6 +873,7 @@ function openIcon(iconId){
     if(res.guide){ renderGuide(it); return; }
     if(res.offers){ renderOffers(it, res); return; }
     if(res.knowledge){ renderKnowledge(it, res); return; }
+    if(res.targets){ renderTargets(it, res); return; }
     if(res.pwAdmin){ renderPwAdmin(it); return; }
     if(res.subsAdmin){ renderSubsAdmin(it, res); return; }
     renderIconData(it, res, iconId);
@@ -1236,6 +1271,86 @@ function showChart(key){
   });
 }
 
+
+
+/* ================= 🎯 أصناف المستهدفات الشهرية ================= */
+function renderTargets(it, res){
+  var G = res.targets || [];
+  var h = '<h2>'+it.icon+' '+esc(it.label)+'</h2>';
+  if(!G.length){ $('sectionBody').innerHTML = h + '<div class="of-empty">مفيش أصناف مستهدفة</div>'; return; }
+  h += '<div class="chtabs" id="tg_tabs">';
+  G.forEach(function(g, i){ h += '<button class="chtab'+(i===0?' active':'')+'" data-i="'+i+'">'+esc(g.name)+' ('+g.items.length+')</button>'; });
+  h += '</div><div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input class="tg-search" id="tg_q" style="margin:0;flex:1" placeholder="🔍 ابحث باسم الصنف أو الكود أو الشركة">'
+     + '<select id="tg_sort" class="tg-search" style="margin:0;width:auto;flex:none">'
+     + '<option value="0">ترتيب الشيت</option><option value="az">أبجدي (أ ← ي)</option><option value="za">أبجدي (ي ← أ)</option>'
+     + '<option value="b">اللي ليه بونص الأول</option><option value="bq">أقل كمية بونص</option><option value="nb">اللي ملهوش بونص الأول</option><option value="code">كود الصنف</option>'
+     + '</select><button class="exp-btn" id="tg_xl" style="background:#305496;flex:none">💻 Excel</button></div><div id="tg_list"></div>';
+  $('sectionBody').innerHTML = h;
+  var cur = 0, shown = [];
+  function draw(){
+    var q = String($('tg_q').value||'').trim().toLowerCase();
+    var items = G[cur].items.filter(function(r){ return !q || (r.join(' ').toLowerCase().indexOf(q) !== -1); });
+    var srt = $('tg_sort').value;
+    var bq = function(r){ var m = String(r[4]||'').match(/^\s*([\d.]+)/); return m ? parseFloat(m[1]) : Infinity; };
+    var nm = function(a, b){ return String(a[3]).localeCompare(String(b[3]), 'ar'); };
+    if(srt !== '0'){
+      items = items.slice().sort(function(a, b){
+        if(srt === 'az') return nm(a, b);
+        if(srt === 'za') return nm(b, a);
+        if(srt === 'b')  return ((b[4]?1:0) - (a[4]?1:0)) || nm(a, b);
+        if(srt === 'nb') return ((a[4]?1:0) - (b[4]?1:0)) || nm(a, b);
+        if(srt === 'bq') return (bq(a) - bq(b)) || nm(a, b);
+        if(srt === 'code') return (parseFloat(a[2]) - parseFloat(b[2])) || String(a[2]).localeCompare(String(b[2]));
+        return 0;
+      });
+    }
+    shown = items;
+    var by = {}, order = [];
+    items.forEach(function(r){ var k = r[0]+'|'+r[1]; if(!by[k]){ by[k] = []; order.push(k); } by[k].push(r); });
+    var withB = items.filter(function(r){ return r[4]; }).length;
+    var o = '<div class="tg-cnt">'+items.length+' صنف · منهم '+withB+' ليهم بونص</div>';
+    order.forEach(function(k){
+      var L = by[k], p = k.split('|');
+      var nb = L.filter(function(r){ return r[4]; }).length;
+      o += '<details class="tg-comp"'+(q || order.length===1 ? ' open' : '')+'><summary><span>🏷️ '+esc(p[1])+' <small>('+esc(p[0])+')</small></span><small>'+L.length+' صنف · '+nb+' بونص</small></summary>';
+      o += '<div class="tg-x"><table class="tg-t"><tr><th>كود الصنف</th><th>اسم الصنف</th><th>أقل شريحة بونص</th></tr>';
+      L.forEach(function(r){
+        o += '<tr><td>'+esc(r[2])+'</td><td class="n">'+esc(r[3])+'</td><td>'+(r[4] ? '<span class="tg-b">'+esc(r[4])+'</span>' : '<span class="tg-nb">مفيش بونص</span>')+'</td></tr>';
+      });
+      o += '</table></div></details>';
+    });
+    if(!items.length) o = '<div class="of-empty">مفيش نتايج</div>';
+    $('tg_list').innerHTML = o;
+  }
+  $('tg_tabs').querySelectorAll('.chtab').forEach(function(b){
+    b.addEventListener('click', function(){
+      $('tg_tabs').querySelectorAll('.chtab').forEach(function(x){ x.classList.remove('active'); });
+      b.classList.add('active'); cur = +b.getAttribute('data-i'); draw();
+    });
+  });
+  $('tg_q').addEventListener('input', draw);
+  $('tg_sort').addEventListener('change', draw);
+  $('tg_xl').addEventListener('click', function(){
+    var btn = $('tg_xl'); btn.disabled = true; btn.textContent = '⏳';
+    loadSheetJS(function(){
+      try{
+        var aoa = [['كود الشركة','اسم الشركة','كود الصنف','اسم الصنف','أقل شريحة بونص']];
+        shown.forEach(function(r){ aoa.push([r[0], r[1], isNaN(+r[2]) ? r[2] : +r[2], r[3], r[4] || 'مفيش بونص']); });
+        var ws = XLSX.utils.aoa_to_sheet(aoa);
+        ws['!cols'] = [{wch:11},{wch:26},{wch:11},{wch:42},{wch:16}];
+        var hs = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{patternType:'solid',fgColor:{rgb:'305496'}},alignment:{horizontal:'center'}};
+        for(var c=0;c<5;c++){ var a = XLSX.utils.encode_cell({r:0,c:c}); if(ws[a]) ws[a].s = hs; }
+        ws['!autofilter'] = {ref: ws['!ref']};
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, String(G[cur].name).replace(/[\\\/?*\[\]:]/g,' ').slice(0,31));
+        wb.Workbook = {Views:[{RTL:true}]};
+        XLSX.writeFile(wb, 'أصناف مستهدفة - '+G[cur].name+'.xlsx');
+      }catch(e){ alert('خطأ في التصدير: '+e.message); }
+      btn.disabled = false; btn.textContent = '💻 Excel';
+    });
+  });
+  draw();
+}
 
 /* ================= 🔥 أهم العروض ================= */
 function renderOffers(it, res){
@@ -2015,6 +2130,8 @@ function sortTable(tableId, col){
 }
 
 function exportTable(tableId){
+  /* 📱 تطبيق الأندرويد (WebView) مبيعرفش ينزّل ملف .xls بالطريقة دي — بيطلع شاشة سودا؛ فبنصدّر xlsx بنفس طريقة زرار 💻 اللي شغال */
+  if(/; wv\)/.test(navigator.userAgent||'')){ exportXlsx(tableId); return; }
   var table=$(tableId); if(!table) return;
   var html='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8">'
     +'<style>td,th{border:1px solid #ccc;padding:4px;text-align:center;mso-number-format:"\\@"}</style></head><body><table dir="rtl" border="1">';
