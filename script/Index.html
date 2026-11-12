@@ -277,7 +277,7 @@ td.below{background:#fde2e2 !important}
       </label>
     </div>
     <button class="btn-full" id="btnCode">دخول</button>
-    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 5.2</div>
+    <div id="verTag" style="text-align:center;font-size:11px;color:#9aa3b8;margin-top:10px">إصدار 5.3</div>
   </div>
 
   <div class="step" id="step-branches">
@@ -511,7 +511,7 @@ try { REM_DIAG.top = (window.top === window) ? 'مباشر' : 'جوه صفحة';
 try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); REM_DIAG.ls = 'شغالة'; } catch(e){ REM_DIAG.ls = 'ممنوعة'; }
 function showRemDiag(){ return; /* التشخيص اتقفل */
   var t = 'تذكّرني: ' + (REM_DIAG.saved || '—') + ' · ذاكرة: ' + REM_DIAG.ls + ' · فتح: ' + REM_DIAG.top + ' · محفوظ قبل كده: ' + (REM_DIAG.hash || '—');
-  var a = document.getElementById('verTag'); if(a) a.textContent = 'إصدار 5.2 · ' + t;
+  var a = document.getElementById('verTag'); if(a) a.textContent = 'إصدار 5.3 · ' + t;
   var b = document.getElementById('remDiag');
   if(!b){ b = document.createElement('div'); b.id = 'remDiag'; b.style.cssText = 'font-size:11px;color:#8a93a8;text-align:center;padding:6px 10px'; var app = document.getElementById('app'); if(app) app.appendChild(b); }
   b.textContent = t;
