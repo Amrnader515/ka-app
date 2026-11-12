@@ -7,12 +7,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 const kUrl =
     'https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec';
 
-void main() {
+/* 🔔 إشعارات Firebase — بيانات تعريف التطبيق (مش سرية) */
+const kFb = FirebaseOptions(
+  apiKey: 'AIzaSyDSR-hwr-qVYCwt4d4x0vWDOBcrbXdpQQU',
+  appId: '1:345594149704:android:041082b0c6d6ce8aa1917d',
+  messagingSenderId: '345594149704',
+  projectId: 'ka-app-24aa3',
+  storageBucket: 'ka-app-24aa3.firebasestorage.app',
+);
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try { await Firebase.initializeApp(options: kFb); } catch (_) {}
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.black,
     statusBarIconBrightness: Brightness.light,
@@ -43,6 +55,26 @@ class _HomeState extends State<Home> {
   String? _remember;   /* «تذكّرني» محفوظ جوه التطبيق */
 
   Timer? _watch;
+  String? _push;       /* رقم الجهاز للإشعارات */
+
+  /* بيبعت رقم الجهاز لصفحة التطبيق (جوه إطارات جوجل) — والصفحة بتسجله بعد الدخول بس */
+  Future<void> _sendPush() async {
+    final t = _push;
+    if (t == null) return;
+    final js = "(function(t){function w(x){try{x.postMessage({ka:'pushToken',t:t,p:'android'},'*');}catch(e){}"
+        "try{for(var i=0;i<x.frames.length;i++)w(x.frames[i]);}catch(e){}}w(window);})(${jsonEncode(t)});";
+    try { await _c.runJavaScript(js); } catch (_) {}
+  }
+
+  Future<void> _initPush() async {
+    try {
+      final m = FirebaseMessaging.instance;
+      await m.requestPermission(alert: true, badge: true, sound: true);
+      _push = await m.getToken();
+      m.onTokenRefresh.listen((t) { _push = t; _sendPush(); });
+      _sendPush();
+    } catch (_) {}
+  }
 
   Uri _startUri() => Uri.parse(_remember == null || _remember!.isEmpty
       ? '$kUrl?app=1'
@@ -102,6 +134,7 @@ class _HomeState extends State<Home> {
         onPageFinished: (u) {
           if (mounted) setState(() => _loading = false);
           _checkUrl(u);
+          _sendPush();
         },
         onUrlChange: (c) => _checkUrl(c.url),
         onWebResourceError: (e) {
@@ -132,9 +165,12 @@ class _HomeState extends State<Home> {
       _remember = sp.getString('kar');
       _c.loadRequest(_startUri());
     });
+    int tick = 0;
     _watch = Timer.periodic(const Duration(seconds: 2), (_) async {
       try { _checkUrl(await _c.currentUrl()); } catch (_) {}
+      if (++tick % 3 == 0) _sendPush();   /* كل 6 ثواني — الصفحة بتتجاهل التكرار */
     });
+    _initPush();
   }
 
   @override
