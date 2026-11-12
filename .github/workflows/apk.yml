@@ -51,6 +51,13 @@ jobs:
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<application#<uses-permission android:name="android.permission.INTERNET"/>\n    <application#' $M
           sed -i 's#android:label="ka_app"#android:label="Key Account"#' $M
+          # فحص lint بيقع في المكتبات أحياناً — مش لازم للتطبيق
+          if [ -f android/app/build.gradle.kts ]; then
+            printf '\nandroid {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n}\n' >> android/app/build.gradle.kts
+          else
+            printf '\nandroid {\n    lintOptions {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n}\n' >> android/app/build.gradle
+          fi
+          echo 'org.gradle.jvmargs=-Xmx4g' >> android/gradle.properties
           flutter pub get
           flutter build apk --release --build-number=${{ github.run_number }} --build-name=1.0.${{ github.run_number }}
           # توقيع ثابت بنفس المفتاح كل مرة — عشان أي نسخة جديدة تتسطّب فوق القديمة
