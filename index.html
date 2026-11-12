@@ -19,10 +19,16 @@
   #splash{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#C9964A;font:700 16px Tahoma,Arial,sans-serif;transition:opacity .4s}
   #splash img{width:110px;height:110px;border-radius:26px}
   #splash.off{opacity:0;pointer-events:none}
+  #pushBar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));display:none;align-items:center;gap:10px;background:#111827;color:#fff;border:1px solid #C9964A;border-radius:14px;padding:10px 12px;font:600 14px Tahoma,Arial,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:9}
+  #pushBar.on{display:flex}
+  #pushBar span{flex:1;line-height:1.5}
+  #pushBar button{border:0;border-radius:10px;padding:9px 12px;font:700 13px Tahoma,Arial,sans-serif;cursor:pointer}
+  #pushYes{background:#C9964A;color:#000}#pushNo{background:transparent;color:#9aa3b8}
 </style>
 </head>
 <body>
 <iframe id="app" title="Key Account Application Report" allow="clipboard-write; fullscreen"></iframe>
+<div id="pushBar"><span>🔔 فعّل الإشعارات عشان يوصلك تنبيه أول ما البيانات تتحدث</span><button id="pushYes">تفعيل</button><button id="pushNo">بعدين</button></div>
 <div id="splash"><img src="icon-512.png" alt=""><div>Key Account Application Report</div></div>
 <script>
   var EXEC='https://script.google.com/macros/s/AKfycbydR5fgOyiC1JxbQqpYQGuulKk9Ph3QF-ThdcCUF3XjYNb-AFeHGNzcPrGKASQLgMOb/exec';
@@ -43,7 +49,43 @@
   });
   f.addEventListener('load',function(){ setTimeout(function(){ s.classList.add('off'); },300); });
   setTimeout(function(){ s.classList.add('off'); },8000);
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+  var SWR = ('serviceWorker' in navigator) ? navigator.serviceWorker.register('sw.js').catch(function(){ return null; }) : Promise.resolve(null);
+
+  /* ===== 🔔 إشعارات الموبايل (Firebase) ===== */
+  var FB = { apiKey:'AIzaSyCHQNQHWr0uHhsTFWdp9-6HsQUVfChYE3I', authDomain:'ka-app-24aa3.firebaseapp.com', projectId:'ka-app-24aa3',
+             storageBucket:'ka-app-24aa3.firebasestorage.app', messagingSenderId:'345594149704', appId:'1:345594149704:web:fed3ccfdc973a78ea1917d' };
+  var VAPID = 'BCNGJrGnx1vfwfMxzTdKx3powncu81OdQaGYUfhQrBJNYrM6O2jumEY1KegCtW9FzpEt1Rf9RSNpRbg1JwrBZZA';
+  var bar = document.getElementById('pushBar'), pushTok = null;
+  function pushSupported(){ return ('Notification' in window) && ('serviceWorker' in navigator) && ('PushManager' in window); }
+  var appWin = null;   /* إطار التطبيق نفسه (جوه إطار جوجل) — بنعرفه من أول رسالة بيبعتها */
+  function sendTok(){ if(pushTok && appWin) appWin.postMessage({ka:'pushToken', t:pushTok, p:'web'}, '*'); }
+  function getTok(){
+    return SWR.then(function(reg){
+      if(!reg || !window.firebase) throw 0;
+      if(!firebase.apps.length) firebase.initializeApp(FB);
+      return firebase.messaging().getToken({ vapidKey: VAPID, serviceWorkerRegistration: reg });
+    }).then(function(t){ if(t){ pushTok = t; sendTok(); } });
+  }
+  function onLogged(){
+    if(!pushSupported()) return;
+    if(Notification.permission === 'granted'){ getTok().catch(function(){}); return; }
+    if(Notification.permission === 'denied') return;
+    var no = null; try{ no = localStorage.getItem('ka_push_no'); }catch(e){}
+    if(no && Date.now() - (+no) < 3*24*3600*1000) return;   /* «بعدين» = يسأل تاني بعد 3 أيام */
+    bar.classList.add('on');
+  }
+  document.getElementById('pushYes').onclick = function(){
+    bar.classList.remove('on');
+    Notification.requestPermission().then(function(p){ if(p === 'granted') return getTok(); }).catch(function(){});
+  };
+  document.getElementById('pushNo').onclick = function(){ bar.classList.remove('on'); try{ localStorage.setItem('ka_push_no', String(Date.now())); }catch(e){} };
+  window.addEventListener('message', function(ev){
+    if(!/\.googleusercontent\.com$/.test(new URL(ev.origin).hostname)) return;
+    var d = ev.data || {};
+    if(d.ka === 'logged'){ appWin = ev.source; sendTok(); onLogged(); }
+  });
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 </body>
 </html>
