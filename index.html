@@ -62,7 +62,14 @@
   function getTok(){
     return SWR.then(function(reg){
       if(!reg || !window.firebase) throw 0;
-      if(!firebase.apps.length) firebase.initializeApp(FB);
+      if(!firebase.apps.length){
+        firebase.initializeApp(FB);
+        /* لو التطبيق مفتوح قدامك، Firebase مش بيعرض الإشعار لوحده — فبنعرضه إحنا */
+        firebase.messaging().onMessage(function(m){
+          var n = (m && m.notification) || {};
+          try{ reg.showNotification(n.title || 'Key Account', { body: n.body || '', icon: 'icon-192.png', badge: 'icon-192.png', dir: 'rtl', lang: 'ar', data: { url: location.href } }); }catch(e){}
+        });
+      }
       return firebase.messaging().getToken({ vapidKey: VAPID, serviceWorkerRegistration: reg });
     }).then(function(t){ if(t){ pushTok = t; sendTok(); } });
   }
